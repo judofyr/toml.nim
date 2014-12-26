@@ -13,7 +13,7 @@ type
     inArrayTable*: bool
     kind*: TomlNodeKind
 
-  TomlError* = object of E_Base
+  TomlError* = object of Exception
 
 
 proc lineInfo(walker: var TomlWalker): tuple[lineno: int, lineStart: int, lineStop: int] =
@@ -312,7 +312,7 @@ proc readString*(walker: var TomlWalker, skip = false): string =
   walker.position = i+1
   walker.process
 
-proc readDatetime*(walker: var TomlWalker): TTime =
+proc readDatetime*(walker: var TomlWalker): Time =
   if walker.kind != TDatetime:
     raise kindException(walker, "datetime")
 
@@ -340,9 +340,9 @@ proc readDatetime*(walker: var TomlWalker): TTime =
       raise parserException(walker, "invalid datetime")
     i += 1
 
-  var timeinfo: TTimeInfo
+  var timeinfo: TimeInfo
   timeinfo.year = parts[0]
-  timeinfo.month = TMonth(parts[1] - 1)
+  timeinfo.month = Month(parts[1] - 1)
   timeinfo.yearday = parts[2]
   timeinfo.hour = parts[3]
   timeinfo.minute = parts[4]
