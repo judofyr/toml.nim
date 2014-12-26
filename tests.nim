@@ -54,3 +54,37 @@ suite "walker":
 
     check walker.kind == TString
     check walker.readString == "123"
+
+  test "string with escape codes":
+    walker.initWalker("data = '123\\n123'\ndata = '\\n123'\ndata = '123\\n'")
+
+    # Escape in the middle
+    check walker.kind == TKey
+    check walker.readKey == "data"
+
+    check walker.kind == TString
+    check walker.readString == "123\n123"
+
+    # Escape at beginning
+    check walker.kind == TKey
+    check walker.readKey == "data"
+
+    check walker.kind == TString
+    check walker.readString == "\n123"
+
+    # Escape at end
+    check walker.kind == TKey
+    check walker.readKey == "data"
+
+    check walker.kind == TString
+    check walker.readString == "123\n"
+
+  test "various escape code":
+    walker.initWalker("data = '\\b\\t\\n\\f\\r\\\"\\/\\\\'")
+
+    check walker.kind == TKey
+    check walker.readKey == "data"
+
+    check walker.kind == TString
+    check walker.readString == "\b\t\n\f\r\"/\\"
+

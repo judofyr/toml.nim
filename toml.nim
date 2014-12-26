@@ -291,6 +291,8 @@ proc readString*(walker: var TomlWalker, skip = false): string =
   if walker.kind != TString:
     raise kindException(walker, "string")
 
+  result = ""
+
   var
     buffer = walker.buffer
     len = buffer.len
@@ -299,12 +301,42 @@ proc readString*(walker: var TomlWalker, skip = false): string =
     delim = buffer[i-1]
 
   while i < len:
-    if buffer[i] == delim:
+    let c = buffer[i]
+    if c == '\\':
+      if not skip and i > start:
+        result.add(buffer.substr(start, i-1))
+
+      i += 1
+      var extra_c: char
+      let esc_c = buffer[i]
+
+      case esc_c
+      of 'b':
+        extra_c = '\b'
+      of 'f':
+        extra_c = '\f'
+      of 'n':
+        extra_c = '\10'
+      of 'r':
+        extra_c = '\r'
+      of 't':
+        extra_c = '\t'
+      of '"', '/', '\\':
+        extra_c = esc_c
+      else:
+        raise parserException(walker, i, "unexpected escape")
+
+      if not skip:
+        result.add(extra_c)
+
+      start = i+1
+    elif c == delim:
       break
     i += 1
 
-  if not skip:
-    result = buffer.substr(start, i-1)
+  if not skip and i > start:
+    result.add(buffer.substr(start, i-1))
+
   walker.position = i+1
   walker.process
 
