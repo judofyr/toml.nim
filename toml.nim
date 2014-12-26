@@ -1,5 +1,6 @@
 import strutils
 import times
+import unicode
 
 type
   TomlNodeKind* = enum
@@ -323,10 +324,18 @@ proc readString*(walker: var TomlWalker, skip = false): string =
         extra_c = '\t'
       of '"', '/', '\\':
         extra_c = esc_c
+      of 'u':
+        let code = parseHexInt(buffer.substr(i+1, i+4))
+        result.add(Rune(code).toUTF8)
+        i += 4
+      of 'U':
+        let code = parseHexInt(buffer.substr(i+1, i+8))
+        result.add(Rune(code).toUTF8)
+        i += 8
       else:
         raise parserException(walker, i, "unexpected escape")
 
-      if not skip:
+      if not skip and extra_c != '\0':
         result.add(extra_c)
 
       start = i+1

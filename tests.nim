@@ -1,5 +1,6 @@
 import toml
 import unittest
+import unicode
 
 var walker: TomlWalker
 
@@ -87,4 +88,22 @@ suite "walker":
 
     check walker.kind == TString
     check walker.readString == "\b\t\n\f\r\"/\\"
+
+  test "unicode escape":
+    walker.initWalker("data = '\\u2300'")
+
+    check walker.kind == TKey
+    check walker.readKey == "data"
+
+    check walker.kind == TString
+    check walker.readString == Rune(0x2300).toUTF8
+
+  test "big unicode escape":
+    walker.initWalker("data = '\\U0001F4A9'")
+
+    check walker.kind == TKey
+    check walker.readKey == "data"
+
+    check walker.kind == TString
+    check walker.readString == Rune(0x1F4A9).toUTF8
 
