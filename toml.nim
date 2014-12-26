@@ -54,6 +54,9 @@ proc process(walker: var TomlWalker) =
 
 proc initWalker*(walker: var TomlWalker, buffer: string) =
   walker.buffer = buffer
+  walker.position = 0
+  walker.depth = 0
+  walker.inArrayTable = false
   shallow(walker.buffer)
   walker.process
 
@@ -137,6 +140,7 @@ proc processValue(walker: var TomlWalker) =
       walker.kind = TString
       break
     of '0'..'9':
+      walker.kind = TNum
       for k in i+1..len-1:
         case buffer[k]:
         of '0'..'9':
@@ -147,7 +151,6 @@ proc processValue(walker: var TomlWalker) =
           walker.kind = TDatetime
           break
         else:
-          walker.kind = TNum
           break
       break
     of '+', '-':
