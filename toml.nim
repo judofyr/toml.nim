@@ -16,12 +16,11 @@ type
   TomlError* = object of Exception
 
 
-proc lineInfo(walker: var TomlWalker): tuple[lineno: int, lineStart: int, lineStop: int] =
-  let
-    i = walker.position
-    buffer = walker.buffer
+proc lineInfo(walker: var TomlWalker, i: int): tuple[lineno: int, lineStart: int, lineStop: int] =
+  let buffer = walker.buffer
 
   result.lineno = 1
+  result.lineStop = buffer.len-1
 
   for j in 0..buffer.len-1:
     if buffer[j] == '\10':
@@ -32,16 +31,16 @@ proc lineInfo(walker: var TomlWalker): tuple[lineno: int, lineStart: int, lineSt
       result.lineno += 1
       result.lineStart = j+1
 
-template parserException(walker: var TomlWalker, msg: string): expr =
+template parserException(walker: var TomlWalker, i: int, msg: string): expr =
   let
-    (lineno, lineStart, lineStop) = walker.lineInfo
+    (lineno, lineStart, lineStop) = walker.lineInfo(i)
     line = walker.buffer.substr(lineStart, lineStop)
-    space = repeatChar(walker.position - lineStart)
+    space = repeatChar(i - lineStart)
     fullmsg = "$# at line $#:\n  $#\n  $#^" % [ msg, $lineno, line, space ]
   newException(TomlError, fullmsg)
 
 template kindException(walker: var TomlWalker, msg: string): expr =
-  parserException(walker, "expected " & msg & " got " & $walker.kind)
+  parserException(walker, walker.position, "expected " & msg & " got " & $walker.kind)
 
 proc processMain(walker: var TomlWalker)
 proc processValue(walker: var TomlWalker)
@@ -179,9 +178,7 @@ proc processValue(walker: var TomlWalker) =
       i += 1
       break
     else:
-      walker.position = i
-      raise parserException(walker, "unexpected char")
-      #raise newException(E_Base, "unexpected char: $#" % $buffer[i])
+      raise parserException(walker, i, "unexpected char")
     i += 1
 
   walker.position = i
@@ -256,8 +253,7 @@ proc readInt*(walker: var TomlWalker): int64 =
     of '\10', '\13', ' ', '\9', ',', ']':
       break
     else:
-      walker.position = i
-      raise parserException(walker, "invalid number")
+      raise parserException(walker, i, "invalid number")
     i += 1
 
   if negative:
@@ -336,8 +332,7 @@ proc readDatetime*(walker: var TomlWalker): Time =
     of 'Z':
       break
     else:
-      walker.position = i
-      raise parserException(walker, "invalid datetime")
+      raise parserException(walker, i, "invalid datetime")
     i += 1
 
   var timeinfo: TimeInfo
